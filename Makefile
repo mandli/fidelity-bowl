@@ -22,8 +22,7 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?=
-
+FFLAGS ?= 
 
 # ---------------------------------
 # package sources for this program:
@@ -56,14 +55,3 @@ SOURCES = \
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
-
-# Construct the topography data
-.PHONY: topo all
-topo:
-	python maketopo.py
-
-all: 
-	$(MAKE) topo
-	$(MAKE) .plots
-	$(MAKE) .htmls
-

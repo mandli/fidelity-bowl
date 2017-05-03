@@ -8,8 +8,12 @@ that will be read in by the Fortran code.
 
 from __future__ import absolute_import
 from __future__ import print_function
+
 import os
-import numpy as np
+
+import numpy
+
+import clawpack.geoclaw.topotools as topotools
 
 
 #------------------------------
@@ -324,7 +328,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # gauges along x-axis:
     gaugeno = 0
-    for r in np.linspace(86., 93., 9):
+    for r in numpy.linspace(86., 93., 9):
         gaugeno = gaugeno+1
         x = r + .001  # shift a bit away from cell corners
         y = .001
@@ -332,10 +336,10 @@ def setrun(claw_pkg='geoclaw'):
 
     # gauges along diagonal:
     gaugeno = 100
-    for r in np.linspace(86., 93., 9):
+    for r in numpy.linspace(86., 93., 9):
         gaugeno = gaugeno+1
-        x = (r + .001) / np.sqrt(2.)
-        y = (r + .001) / np.sqrt(2.)
+        x = (r + .001) / numpy.sqrt(2.)
+        y = (r + .001) / numpy.sqrt(2.)
         rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
     
 
@@ -410,6 +414,40 @@ def setgeo(rundata):
     # ----------------------
 
 
+def write_topo(num_cells=(201, 201), lower=(-100.0, -100.0),
+               upper=(100.0, 100.0), file_name='bowl.topotype2'):
+    r"""Write the synthetic bowl topography"""
+
+    topo = topotools.Topography(topo_func=bowl_radial_topo)
+    topo.x = numpy.linspace(lower[0], upper[0], num_cells[0])
+    topo.y = numpy.linspace(lower[1], upper[1], num_cells[1])
+    topo.write(os.path.join(os.getcwd(), file_name), topo_type=2,
+               Z_format="%22.15e")
+
+
+def write_qinit(A=40.0, num_cells=(101, 101), lower=(-50.0, -50.0),
+                upper=(50.0, 50.0), file_name='hump.xyz'):
+    r"""Write the initial condition"""
+
+    qinit = lambda x, y: gaussian_hump(x, y, A=A)
+    topo = topotools.Topography(topo_func=qinit)
+    topo.x = numpy.linspace(lower[0], upper[0], num_cells[0])
+    topo.y = numpy.linspace(lower[1], upper[1], num_cells[1])
+    topo.write(os.path.join(os.getcwd(), file_name), topo_type=1)
+
+
+def bowl_radial_topo(x, y):
+    """Radial bowl topography function"""
+
+    return 1e-2 * (x**2 + y**2) - 80.0
+
+
+def gaussian_hump(x, y, A=40.0, center=(0.0, 0.0), sigma=3.16227766):
+    """Gaussian hump initial condition"""
+
+    z = -((x + center[0])**2 + (y + center[1])**2) / sigma**2
+    return numpy.where(z > -10.0, A * numpy.exp(z), 0.0)
+
 
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
@@ -417,3 +455,5 @@ if __name__ == '__main__':
     rundata = setrun(*sys.argv[1:])
     rundata.write()
 
+    write_topo()
+    write_qinit()
